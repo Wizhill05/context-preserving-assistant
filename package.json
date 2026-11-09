@@ -1,0 +1,20 @@
+{
+  "name": "context-preserving-assistant",
+  "version": "1.0.0",
+  "description": "Auth0 Challenge: The Context-Preserving Assistant (Focus: Full-Stack Identity & API Access)",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/**/*.test.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-oauth2-jwt-bearer": "^1.7.0",
+    "express-openid-connect": "^2.17.1"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

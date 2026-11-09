@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Context-Preserving Assistant (Auth0 Challenge)</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent-hover: #1f6feb;
+      --auth0: #eb5424;
+      --text: #c9d1d9;
+      --text-bold: #f0f6fc;
+      --text-muted: #8b949e;
+      --green: #238636;
+      --bubble-user: #1f6feb;
+      --bubble-bot: #21262d;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge-auth0 {
+      background-color: var(--auth0);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-bold);
+    }
+
+    .user-panel {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+    }
+
+    .user-info {
+      text-align: right;
+    }
+
+    .user-name {
+      font-weight: 600;
+      color: var(--text-bold);
+    }
+
+    .user-sub {
+      font-family: monospace;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background: #21262d;
+      color: var(--text);
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #30363d;
+      border-color: #8b949e;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .main-layout {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 61px);
+    }
+
+    /* Left Sidebar: Verified Context inspector */
+    .sidebar {
+      width: 320px;
+      background: var(--card-bg);
+      border-right: 1px solid var(--border);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .sidebar-section {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .sidebar-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .prop-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .prop-label {
+      color: var(--text-muted);
+    }
+
+    .prop-val {
+      font-weight: 500;
+      color: var(--text-bold);
+      text-align: right;
+    }
+
+    .quick-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .quick-btn {
+      text-align: left;
+      font-size: 12px;
+      padding: 8px 10px;
+      background: #21262d;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      cursor: pointer;
+      line-height: 1.4;
+    }
+
+    .quick-btn:hover {
+      border-color: var(--accent);
+      background: #1c2128;
+    }
+
+    /* Right Chat Container */
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #090d13;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .message-row {
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+    }
+
+    .message-row.user {
+      align-self: flex-end;
+    }
+
+    .message-row.assistant {
+      align-self: flex-start;
+    }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .message-row.user .bubble {
+      background: var(--bubble-user);
+      color: white;
+      border-bottom-right-radius: 2px;
+    }
+
+    .message-row.assistant .bubble {
+      background: var(--bubble-bot);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 2px;
+    }
+
+    .actions-badge-container {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .action-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-family: monospace;
+      background: #1c2128;
+      border: 1px solid #444c56;
+      color: #7ee787;
+    }
+
+    .chat-input-area {
+      padding: 16px 24px;
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 12px;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 16px;
+      color: var(--text-bold);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .chat-input:focus {
+      border-color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="badge-auth0">Auth0 GHW</span>
+      <span class="title">Context-Preserving Assistant</span>
+    </div>
+    <div class="user-panel">
+      <div class="user-info">
+        <div class="user-name" id="nav-user-name">Loading...</div>
+        <div class="user-sub" id="nav-user-sub">sub: ...</div>
+      </div>
+      <a id="auth-action-btn" class="btn" href="/logout">Sign Out</a>
+    </div>
+  </header>
+
+  <div class="main-layout">
+    <!-- Context & API Inspector Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">
+          <span>Identity Context</span>
+          <span style="color:#7ee787;">● Verified</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Mode:</span>
+          <span class="prop-val" id="sb-mode">Mock / Local</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Subject:</span>
+          <span class="prop-val" style="font-family: monospace; font-size:11px;" id="sb-sub">...</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Audience:</span>
+          <span class="prop-val" style="font-size:11px;" id="sb-aud">api.assistant.local</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">
+          <span>First-Party API Settings</span>
+          <button class="btn" style="padding: 2px 6px; font-size: 10px;" onclick="refreshSettings()">Sync</button>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Home City:</span>
+          <span class="prop-val" id="sb-home-city" style="color:var(--accent);">Mangalore</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Temp Unit:</span>
+          <span class="prop-val" id="sb-unit">Celsius</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Profile Name:</span>
+          <span class="prop-val" id="sb-name">Jane Doe</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Quick Intent Triggers</div>
+        <div class="quick-actions">
+          <button class="quick-btn" onclick="sendPrompt('What is the weather in my home city?')">
+            🌤️ <strong>Home City Weather</strong><br/>
+            <small style="color:var(--text-muted)">1st-party profile → 3rd-party weather</small>
+          </button>
+          <button class="quick-btn" onclick="sendPrompt('Show my settings')">
+            ⚙️ <strong>Show First-Party Settings</strong><br/>
+            <small style="color:var(--text-muted)">Calls GET /api/settings via JWT</small>
+          </button>
+          <button class="quick-btn" onclick="sendPrompt('Change my home city to San Francisco')">
+            🔄 <strong>Update Home City</strong><br/>
+            <small style="color:var(--text-muted)">Calls PUT /api/settings</small>
+          </button>
+          <button class="quick-btn" onclick="sendPrompt('Check my calendar with Token Vault')">
+            📅 <strong>Auth0 Token Vault</strong><br/>
+            <small style="color:var(--text-muted)">Delegated Google Calendar flow</small>
+          </button>
+          <button class="quick-btn" onclick="sendPrompt('Who am I')">
+            🆔 <strong>Who Am I</strong><br/>
+            <small style="color:var(--text-muted)">Inspect active claims & sub</small>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Chat Area -->
+    <main class="chat-container">
+      <div class="chat-messages" id="chat-messages">
+        <!-- Messages will be rendered dynamically -->
+      </div>
+      <div class="chat-input-area">
+        <input
+          type="text"
+          id="chat-input"
+          class="chat-input"
+          placeholder="Ask me: 'What's the weather in my home city?', 'Show settings'..."
+          onkeydown="if (event.key === 'Enter') handleSend();"
+        />
+        <button class="btn btn-primary" onclick="handleSend()">Send</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const sessionId = 'ses_' + Math.random().toString(36).substring(2, 10);
+    let currentUser = null;
+
+    async function loadIdentityAndSettings() {
+      try {
+        const res = await fetch('/api/identity');
+        const data = await res.json();
+        currentUser = data.user;
+
+        document.getElementById('nav-user-name').textContent = currentUser.name || 'User';
+        document.getElementById('nav-user-sub').textContent = currentUser.sub;
+        document.getElementById('sb-mode').textContent = data.mode === 'auth0' ? 'Auth0 Live' : 'Mock Mode';
+        document.getElementById('sb-sub').textContent = currentUser.sub;
+        document.getElementById('sb-aud').textContent = data.audience || 'https://api.assistant.local';
+
+        if (data.mode === 'mock') {
+          document.getElementById('auth-action-btn').style.display = 'none';
+        }
+
+        await refreshSettings();
+
+        // Add welcoming bot greeting
+        appendMessage('assistant', `Hello ${currentUser.name}! 👋 I am your Context-Preserving Assistant.\n\nI have loaded your identity (${currentUser.sub}) and verified your First-Party API profile. You can ask for the weather in your home city, modify settings, or test third-party Token Vault delegation!`);
+      } catch (err) {
+        console.error('Failed to load identity', err);
+      }
+    }
+
+    async function refreshSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        const json = await res.json();
+        if (json.success && json.data) {
+          const profile = json.data;
+          document.getElementById('sb-home-city').textContent = profile.homeCity;
+          document.getElementById('sb-unit').textContent = profile.temperatureUnit;
+          document.getElementById('sb-name').textContent = profile.name;
+        }
+      } catch (err) {
+        console.error('Failed to refresh settings', err);
+      }
+    }
+
+    function appendMessage(role, text, actions = []) {
+      const container = document.getElementById('chat-messages');
+      const row = document.createElement('div');
+      row.className = `message-row ${role}`;
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerText = text;
+      row.appendChild(bubble);
+
+      if (actions && actions.length > 0) {
+        const badgeContainer = document.createElement('div');
+        badgeContainer.className = 'actions-badge-container';
+        actions.forEach(act => {
+          const span = document.createElement('span');
+          span.className = 'action-tag';
+          span.textContent = `⚡ [${act.type}] ${act.endpoint || act.provider || ''}`;
+          badgeContainer.appendChild(span);
+        });
+        row.appendChild(badgeContainer);
+      }
+
+      container.appendChild(row);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendPrompt(promptText) {
+      appendMessage('user', promptText);
+
+      try {
+        const res = await fetch('/api/assistant/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            message: promptText
+          })
+        });
+
+        const data = await res.json();
+        appendMessage('assistant', data.reply, data.actions);
+        // Refresh sidebar in case home city or settings were updated
+        await refreshSettings();
+      } catch (err) {
+        appendMessage('assistant', '⚠️ Error contacting assistant: ' + err.message);
+      }
+    }
+
+    function handleSend() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      sendPrompt(text);
+    }
+
+    window.addEventListener('DOMContentLoaded', loadIdentityAndSettings);
+  </script>
+</body>
+</html>
